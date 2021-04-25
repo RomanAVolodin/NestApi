@@ -1,102 +1,16 @@
 version: '3.7'
 
 services:
-  gateway:
-    build:
-      context: gateway/docker
-      dockerfile: development/nginx/Dockerfile
-    ports:
-      - "8081:8081"
-    depends_on:
-      - frontend
-      - api
-
-  frontend:
-    build:
-      context: frontend/docker
-      dockerfile: development/nginx/Dockerfile
-    volumes:
-      - ./frontend:/app
-
-  node-watch:
-    build:
-      context: frontend/docker
-      dockerfile: development/node/Dockerfile
-    volumes:
-      - ./frontend/vuefront:/app
-    ports:
-      - "8080:8080"
-    working_dir: /app
-    command: sh -c "npm run serve"
-    tty: true
-    env_file:
-      - ./.env.dev
-
-  api:
-    build:
-      context: api
-      dockerfile: docker/development/django/Dockerfile
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./api/:/usr/src/app/
-    env_file:
-      - ./.env.dev
-#    ports:
-#      - "8082:8000"
-    depends_on:
-      - db
-      - redis
 
   db:
     image: postgres:12.0-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
-      - "54321:5432"
+      - "5432:5432"
     env_file:
-      - ./.env.dev.db
+      - ./.env
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    env_file:
-      - ./.env.dev
-    ports:
-      - "8085:15672"
-      - "5672:5672"
-
-  celery_worker:
-    build:
-      context: api
-      dockerfile: docker/development/celery/Dockerfile
-    command: celery -A cabinet worker -l info
-    restart: on-failure
-    volumes:
-      - ./api/:/usr/src/app/
-    env_file:
-      - ./.env.dev
-    depends_on:
-      - rabbitmq
-      - api
-
-  redis:
-    image: redis:6.0-alpine
-    volumes:
-      - manager-redis:/data
-    env_file:
-      - ./.env.dev
-    command:
-      - 'redis-server'
-      - '--databases 2'
-      - '--save 900 1'
-      - '--save 300 10'
-      - '--save 60 10000'
-
-  mailer:
-    image: mailhog/mailhog
-    ports:
-      - "8086:8025"
-      - "1025:1025"
 
 volumes:
   postgres_data:
-  manager-redis:
